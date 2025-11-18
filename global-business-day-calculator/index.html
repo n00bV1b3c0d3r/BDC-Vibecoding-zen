@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Business Day Calculator v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Smart Business Day Calculator v2.0</h1>
+            <p class="text-gray-600">Global business day calculations with 200+ calendars powered by the Python holidays library</p>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Controls -->
+            <div class="space-y-6">
+                <!-- Operation Toggle -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Operation</h2>
+                    <div class="flex gap-4">
+                        <button id="btn-days-between"
+                                class="flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white">
+                            Calculate Days Between
+                        </button>
+                        <button id="btn-future-date"
+                                class="flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300">
+                            Find Future Date
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Date Inputs -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Dates</h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">
+                                Start Date
+                            </label>
+                            <input type="date" id="start-date"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <div id="end-date-container">
+                            <label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">
+                                End Date
+                            </label>
+                            <input type="date" id="end-date"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <div id="business-days-container" class="hidden">
+                            <label for="business-days" class="block text-sm font-medium text-gray-700 mb-1">
+                                Number of Business Days
+                            </label>
+                            <input type="number" id="business-days" min="0" value="5"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar Selection -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4">Calendar Configuration</h2>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Select Calendar(s) for International Teams
+                        </label>
+
+                        <!-- Search box -->
+                        <input type="text" id="calendar-search" placeholder="Search calendars..."
+                               class="w-full px-3 py-2 mb-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+
+                        <!-- Checkbox list -->
+                        <div id="calendar-list" class="border border-gray-300 rounded-md max-h-48 overflow-y-auto p-2 space-y-1">
+                            <!-- Populated by JavaScript -->
+                        </div>
+
+                        <p class="text-xs text-gray-500 mt-1">
+                            <span id="selected-count">0</span> calendar(s) selected
+                        </p>
+                    </div>
+
+                    <!-- Custom Rules Section -->
+                    <div class="space-y-4 pt-4 border-t border-gray-200">
+                        <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Custom Rules</h3>
+
+                        <!-- Weekend Days -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Weekend Days
+                            </label>
+                            <div class="grid grid-cols-4 gap-2">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="0" class="weekend-checkbox rounded text-blue-600">
+                                    <span class="text-sm">Mon</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="1" class="weekend-checkbox rounded text-blue-600">
+                                    <span class="text-sm">Tue</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="2" class="weekend-checkbox rounded text-blue-600">
+                                    <span class="text-sm">Wed</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="3" class="weekend-checkbox rounded text-blue-600">
+                                    <span class="text-sm">Thu</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="4" class="weekend-checkbox rounded text-blue-600">
+                                    <span class="text-sm">Fri</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="5" class="weekend-checkbox rounded text-blue-600 checked">
+                                    <span class="text-sm">Sat</span>
+                                </label>
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" value="6" class="weekend-checkbox rounded text-blue-600">
+                                    <span class="text-sm">Sun</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Holidays -->
+                        <div>
+                            <label for="holidays-list" class="block text-sm font-medium text-gray-700 mb-1">
+                                Holidays (one per line, YYYY-MM-DD)
+                            </label>
+                            <textarea id="holidays-list" rows="3"
+                                      placeholder="2024-12-25&#10;2024-01-01"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"></textarea>
+                        </div>
+
+                        <!-- Makeup Days -->
+                        <div>
+                            <label for="makeup-days-list" class="block text-sm font-medium text-gray-700 mb-1">
+                                Makeup Days (one per line, YYYY-MM-DD)
+                            </label>
+                            <textarea id="makeup-days-list" rows="3"
+                                      placeholder="2024-02-04&#10;2024-02-18"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Weekend days that count as work days (e.g., China's work policy)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <button id="btn-calculate"
+                        class="w-full py-4 px-6 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition-colors">
+                    Calculate
+                </button>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow-md p-6 min-h-[400px]">
+                    <h2 class="text-xl font-semibold mb-4">Results</h2>
+
+                    <!-- Placeholder State -->
+                    <div id="result-placeholder" class="flex flex-col items-center justify-center py-12 text-gray-400">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="text-center">Configure your calculation and click "Calculate" to see results</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="result-loading" class="hidden flex flex-col items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                        <p class="text-gray-600">Calculating...</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="result-error" class="hidden">
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                            <div class="flex">
+                                <svg class="h-5 w-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                                <div>
+                                    <h3 class="text-red-800 font-medium">Error</h3>
+                                    <p id="error-message" class="text-red-700 text-sm mt-1"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Success State -->
+                    <div id="result-success" class="hidden">
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded mb-4">
+                            <div class="flex items-start">
+                                <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                <div class="flex-1">
+                                    <h3 class="text-green-800 font-medium">Calculation Complete</h3>
+                                    <div id="result-content" class="mt-3 space-y-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="bg-gray-50 rounded p-4">
+                            <h4 class="font-medium text-gray-700 mb-2">Calculation Details</h4>
+                            <div id="result-details" class="text-sm text-gray-600 space-y-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====================================================================
+        // State Management
+        // ====================================================================
+
+        const state = {
+            operation: 'days_between',  // 'days_between' or 'get_future_date'
+            calendars: [],              // List of available calendars
+            selectedCalendar: null,     // Currently loaded calendar data
+            selectedCalendarIds: new Set()  // Track selected calendar IDs (preserves selection during search)
+        };
+
+        // ====================================================================
+        // DOM Element References
+        // ====================================================================
+
+        const elements = {
+            // Operation buttons
+            btnDaysBetween: document.getElementById('btn-days-between'),
+            btnFutureDate: document.getElementById('btn-future-date'),
+
+            // Input fields
+            startDate: document.getElementById('start-date'),
+            endDate: document.getElementById('end-date'),
+            businessDays: document.getElementById('business-days'),
+
+            // Containers
+            endDateContainer: document.getElementById('end-date-container'),
+            businessDaysContainer: document.getElementById('business-days-container'),
+
+            // Calendar controls
+            calendarSearch: document.getElementById('calendar-search'),
+            calendarList: document.getElementById('calendar-list'),
+            selectedCount: document.getElementById('selected-count'),
+            weekendCheckboxes: document.querySelectorAll('.weekend-checkbox'),
+            holidaysList: document.getElementById('holidays-list'),
+            makeupDaysList: document.getElementById('makeup-days-list'),
+
+            // Action button
+            btnCalculate: document.getElementById('btn-calculate'),
+
+            // Result containers
+            resultPlaceholder: document.getElementById('result-placeholder'),
+            resultLoading: document.getElementById('result-loading'),
+            resultError: document.getElementById('result-error'),
+            resultSuccess: document.getElementById('result-success'),
+            errorMessage: document.getElementById('error-message'),
+            resultContent: document.getElementById('result-content'),
+            resultDetails: document.getElementById('result-details')
+        };
+
+        // ====================================================================
+        // Helper Functions - UI State
+        // ====================================================================
+
+        /**
+         * Show a specific result state and hide others
+         */
+        function showResultState(stateName) {
+            elements.resultPlaceholder.classList.add('hidden');
+            elements.resultLoading.classList.add('hidden');
+            elements.resultError.classList.add('hidden');
+            elements.resultSuccess.classList.add('hidden');
+
+            if (stateName === 'placeholder') {
+                elements.resultPlaceholder.classList.remove('hidden');
+            } else if (stateName === 'loading') {
+                elements.resultLoading.classList.remove('hidden');
+            } else if (stateName === 'error') {
+                elements.resultError.classList.remove('hidden');
+            } else if (stateName === 'success') {
+                elements.resultSuccess.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Display error message to user
+         */
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            showResultState('error');
+        }
+
+        /**
+         * Display success result to user
+         */
+        function showSuccess(result) {
+            // Build main result display
+            let contentHTML = '';
+
+            if (result.business_days !== undefined) {
+                contentHTML = `
+                    <div class="text-3xl font-bold text-green-700">
+                        ${result.business_days} business days
+                    </div>
+                    <p class="text-sm text-gray-600">between ${result.start_date} and ${result.end_date}</p>
+                `;
+            } else if (result.future_date) {
+                contentHTML = `
+                    <div class="text-3xl font-bold text-green-700">
+                        ${result.future_date}
+                    </div>
+                    <p class="text-sm text-gray-600">${result.business_days} business days from ${result.start_date}</p>
+                `;
+            }
+
+            elements.resultContent.innerHTML = contentHTML;
+
+            // Build details
+            const weekendDays = getSelectedWeekendDays();
+            const holidays = parseTextareaList(elements.holidaysList.value);
+            const makeupDays = parseTextareaList(elements.makeupDaysList.value);
+
+            let detailsHTML = `
+                <div><strong>Weekend days:</strong> ${weekendDays.length ? weekendDays.join(', ') : 'None'}</div>
+                <div><strong>Holidays:</strong> ${holidays.length} configured</div>
+                <div><strong>Makeup days:</strong> ${makeupDays.length} configured</div>
+            `;
+
+            elements.resultDetails.innerHTML = detailsHTML;
+
+            showResultState('success');
+        }
+
+        /**
+         * Switch operation mode (days_between vs get_future_date)
+         */
+        function setOperation(operation) {
+            state.operation = operation;
+
+            // Update button styles
+            if (operation === 'days_between') {
+                elements.btnDaysBetween.className = 'flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white';
+                elements.btnFutureDate.className = 'flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300';
+
+                // Show end date, hide business days
+                elements.endDateContainer.classList.remove('hidden');
+                elements.businessDaysContainer.classList.add('hidden');
+            } else {
+                elements.btnFutureDate.className = 'flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-blue-600 text-white';
+                elements.btnDaysBetween.className = 'flex-1 py-3 px-4 rounded-lg font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300';
+
+                // Show business days, hide end date
+                elements.endDateContainer.classList.add('hidden');
+                elements.businessDaysContainer.classList.remove('hidden');
+            }
+        }
+
+        // ====================================================================
+        // Helper Functions - Data Processing
+        // ====================================================================
+
+        /**
+         * Parse textarea input (one value per line) into array
+         */
+        function parseTextareaList(text) {
+            return text
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0);
+        }
+
+        /**
+         * Get selected weekend days from checkboxes
+         */
+        function getSelectedWeekendDays() {
+            const selected = [];
+            elements.weekendCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selected.push(parseInt(checkbox.value));
+                }
+            });
+            return selected;
+        }
+
+        /**
+         * Set weekend checkboxes based on array of day numbers
+         */
+        function setWeekendCheckboxes(weekendDays) {
+            elements.weekendCheckboxes.forEach(checkbox => {
+                checkbox.checked = weekendDays.includes(parseInt(checkbox.value));
+            });
+        }
+
+        // ====================================================================
+        // API Functions
+        // ====================================================================
+
+        const API_BASE = 'http://127.0.0.1:8080/api';
+
+        /**
+         * Update selected calendar count display
+         */
+        function updateSelectedCount() {
+            elements.selectedCount.textContent = state.selectedCalendarIds.size;
+        }
+
+        /**
+         * Load list of available calendars from API
+         */
+        async function loadCalendarList() {
+            try {
+                const response = await fetch(`${API_BASE}/calendars`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to load calendars');
+                }
+
+                state.calendars = await response.json();
+
+                // Populate checkbox list
+                renderCalendarList(state.calendars);
+
+            } catch (error) {
+                console.error('Failed to load calendars:', error);
+                showError('Failed to load calendar list. Make sure the API is running.');
+            }
+        }
+
+        /**
+         * Setup calendar search functionality
+         *
+         * Readability counts: Filter calendars by search term and re-render
+         */
+        function setupCalendarSearch() {
+            elements.calendarSearch.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = state.calendars.filter(cal =>
+                    cal.name.toLowerCase().includes(searchTerm) ||
+                    cal.id.toLowerCase().includes(searchTerm)
+                );
+                renderCalendarList(filtered);
+            });
+        }
+
+        /**
+         * Render calendar checkbox list
+         *
+         * Explicit is better than implicit: We render only the filtered calendars
+         * but preserve the selection state from state.selectedCalendarIds
+         */
+        function renderCalendarList(calendars) {
+            elements.calendarList.innerHTML = '';
+
+            calendars.forEach(calendar => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 rounded cursor-pointer';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = calendar.id;
+                checkbox.className = 'calendar-checkbox rounded text-blue-600';
+
+                // Restore checked state from central state (not DOM)
+                if (state.selectedCalendarIds.has(calendar.id)) {
+                    checkbox.checked = true;
+                }
+
+                // Update central state when checkbox changes
+                checkbox.addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        state.selectedCalendarIds.add(calendar.id);
+                    } else {
+                        state.selectedCalendarIds.delete(calendar.id);
+                    }
+                    updateSelectedCount();
+                });
+
+                const span = document.createElement('span');
+                span.className = 'text-sm';
+                span.textContent = calendar.name;
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                elements.calendarList.appendChild(label);
+            });
+
+            // Update count after rendering
+            updateSelectedCount();
+        }
+
+        /**
+         * Load a specific calendar's rules and apply to form
+         */
+        async function loadCalendar(calendarId) {
+            if (!calendarId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/calendar/${calendarId}`);
+
+                if (!response.ok) {
+                    throw new Error('Calendar not found');
+                }
+
+                const calendar = await response.json();
+                state.selectedCalendar = calendar;
+
+                // Apply calendar rules to form
+                applyCalendarRules(calendar);
+
+            } catch (error) {
+                console.error('Failed to load calendar:', error);
+                showError(`Failed to load calendar: ${error.message}`);
+            }
+        }
+
+        /**
+         * Apply calendar rules to the form inputs
+         */
+        function applyCalendarRules(calendar) {
+            // Set weekend days
+            setWeekendCheckboxes(calendar.weekend_days || []);
+
+            // Set holidays (one per line)
+            elements.holidaysList.value = (calendar.holidays || []).join('\n');
+
+            // Set makeup days (one per line)
+            elements.makeupDaysList.value = (calendar.makeup_days || []).join('\n');
+        }
+
+        /**
+         * Build calendar rules object from current form state
+         */
+        function buildCalendarRules() {
+            return {
+                weekend_days: getSelectedWeekendDays(),
+                holidays: parseTextareaList(elements.holidaysList.value),
+                makeup_days: parseTextareaList(elements.makeupDaysList.value)
+            };
+        }
+
+        /**
+         * Get selected calendar IDs
+         *
+         * Simple is better than complex: Return array from centralized state
+         */
+        function getSelectedCalendarIds() {
+            return Array.from(state.selectedCalendarIds);
+        }
+
+        /**
+         * Perform calculation via API
+         */
+        async function performCalculation() {
+            // Show loading state
+            showResultState('loading');
+
+            const selectedCalendars = getSelectedCalendarIds();
+
+            // Build request payload
+            const payload = {
+                operation: state.operation,
+                start_date: elements.startDate.value
+            };
+
+            // Use calendar_ids if calendars are selected, otherwise use custom rules
+            if (selectedCalendars.length > 0) {
+                payload.calendar_ids = selectedCalendars;
+            } else {
+                payload.calendar_rules = buildCalendarRules();
+            }
+
+            // Add operation-specific fields
+            if (state.operation === 'days_between') {
+                payload.end_date = elements.endDate.value;
+            } else if (state.operation === 'get_future_date') {
+                payload.business_days = parseInt(elements.businessDays.value);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/calculate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Calculation failed');
+                }
+
+                // Show success
+                showSuccess(result);
+
+            } catch (error) {
+                console.error('Calculation error:', error);
+                showError(error.message);
+            }
+        }
+
+        // ====================================================================
+        // Event Handlers
+        // ====================================================================
+
+        /**
+         * Handle operation button clicks
+         */
+        function handleOperationChange(newOperation) {
+            setOperation(newOperation);
+            showResultState('placeholder');
+        }
+
+        /**
+         * Handle calendar selection change
+         */
+        function handleCalendarSelect(event) {
+            const calendarId = event.target.value;
+
+            if (calendarId) {
+                loadCalendar(calendarId);
+            }
+        }
+
+        /**
+         * Handle calculate button click
+         */
+        function handleCalculate() {
+            // Basic validation
+            if (!elements.startDate.value) {
+                showError('Please select a start date');
+                return;
+            }
+
+            if (state.operation === 'days_between' && !elements.endDate.value) {
+                showError('Please select an end date');
+                return;
+            }
+
+            if (state.operation === 'get_future_date' && !elements.businessDays.value) {
+                showError('Please enter number of business days');
+                return;
+            }
+
+            // Perform calculation
+            performCalculation();
+        }
+
+        // ====================================================================
+        // Event Listeners Setup
+        // ====================================================================
+
+        elements.btnDaysBetween.addEventListener('click', () => handleOperationChange('days_between'));
+        elements.btnFutureDate.addEventListener('click', () => handleOperationChange('get_future_date'));
+        elements.btnCalculate.addEventListener('click', handleCalculate);
+
+        // ====================================================================
+        // Initialization
+        // ====================================================================
+
+        window.addEventListener('load', () => {
+            // Set default start date to today
+            const today = new Date().toISOString().split('T')[0];
+            elements.startDate.value = today;
+
+            // Set default weekend (Saturday and Sunday)
+            setWeekendCheckboxes([5, 6]);
+
+            // Setup calendar search
+            setupCalendarSearch();
+
+            // Load available calendars
+            loadCalendarList();
+
+            // Show initial placeholder
+            showResultState('placeholder');
+        });
+    </script>
+</body>
+</html>

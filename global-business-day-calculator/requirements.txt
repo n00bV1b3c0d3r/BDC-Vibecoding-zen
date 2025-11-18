@@ -1,0 +1,6 @@
+flask==3.0.0
+flask-cors==4.0.0
+holidays==0.39
+pycountry==23.12.11
+gunicorn==21.2.0
+pytest==7.4.3
