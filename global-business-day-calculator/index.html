@@ -304,7 +304,7 @@
         /**
          * Display success result to user
          */
-        function showSuccess(result) {
+        function showSuccess(result, usedCalendarRules) {
             // Build main result display
             let contentHTML = '';
 
@@ -326,13 +326,27 @@
 
             elements.resultContent.innerHTML = contentHTML;
 
-            // Build details
-            const weekendDays = getSelectedWeekendDays();
-            const holidays = parseTextareaList(elements.holidaysList.value);
-            const makeupDays = parseTextareaList(elements.makeupDaysList.value);
+            // Build details - show actual rules used in calculation
+            const selectedCalendars = getSelectedCalendarIds();
+            const weekendDays = usedCalendarRules?.weekend_days || getSelectedWeekendDays();
+            const holidays = usedCalendarRules?.holidays || parseTextareaList(elements.holidaysList.value);
+            const makeupDays = usedCalendarRules?.makeup_days || parseTextareaList(elements.makeupDaysList.value);
+
+            let calendarInfo = '';
+            if (selectedCalendars.length > 0) {
+                const calendarNames = selectedCalendars.map(id => {
+                    const cal = state.calendars.find(c => c.id === id);
+                    return cal ? cal.name : id;
+                }).join(', ');
+                calendarInfo = `<div><strong>Calendars:</strong> ${calendarNames}</div>`;
+            }
+
+            const weekendDayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const weekendStr = weekendDays.length ? weekendDays.map(d => weekendDayNames[d]).join(', ') : 'None';
 
             let detailsHTML = `
-                <div><strong>Weekend days:</strong> ${weekendDays.length ? weekendDays.join(', ') : 'None'}</div>
+                ${calendarInfo}
+                <div><strong>Weekend days:</strong> ${weekendStr}</div>
                 <div><strong>Holidays:</strong> ${holidays.length} configured</div>
                 <div><strong>Makeup days:</strong> ${makeupDays.length} configured</div>
             `;
@@ -605,8 +619,8 @@
                     throw new Error(result.error || 'Calculation failed');
                 }
 
-                // Show success
-                showSuccess(result);
+                // Show success with merged calendar rules from API response
+                showSuccess(result, result.calendar_rules);
 
             } catch (error) {
                 console.error('Calculation error:', error);

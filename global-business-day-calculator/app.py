@@ -637,6 +637,10 @@ def calculate():
             business_days=business_days,
             calendar_rules=calendar_rules
         )
+
+        # Include the merged calendar rules in the response for display
+        result['calendar_rules'] = calendar_rules
+
         return jsonify(result), 200
 
     except ValueError as e:
