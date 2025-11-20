@@ -329,8 +329,40 @@
             // Build details - show actual rules used in calculation
             const selectedCalendars = getSelectedCalendarIds();
             const weekendDays = usedCalendarRules?.weekend_days || getSelectedWeekendDays();
-            const holidays = usedCalendarRules?.holidays || parseTextareaList(elements.holidaysList.value);
-            const makeupDays = usedCalendarRules?.makeup_days || parseTextareaList(elements.makeupDaysList.value);
+            const allHolidays = usedCalendarRules?.holidays || parseTextareaList(elements.holidaysList.value);
+            const allMakeupDays = usedCalendarRules?.makeup_days || parseTextareaList(elements.makeupDaysList.value);
+
+            // Filter holidays to only those within the date range being calculated
+            let holidaysInRange = allHolidays;
+            let makeupDaysInRange = allMakeupDays;
+
+            if (result.start_date && result.end_date) {
+                const startDate = new Date(result.start_date);
+                const endDate = new Date(result.end_date);
+
+                holidaysInRange = allHolidays.filter(h => {
+                    const holidayDate = new Date(h);
+                    return holidayDate > startDate && holidayDate <= endDate;
+                });
+
+                makeupDaysInRange = allMakeupDays.filter(m => {
+                    const makeupDate = new Date(m);
+                    return makeupDate > startDate && makeupDate <= endDate;
+                });
+            } else if (result.start_date && result.future_date) {
+                const startDate = new Date(result.start_date);
+                const futureDate = new Date(result.future_date);
+
+                holidaysInRange = allHolidays.filter(h => {
+                    const holidayDate = new Date(h);
+                    return holidayDate > startDate && holidayDate <= futureDate;
+                });
+
+                makeupDaysInRange = allMakeupDays.filter(m => {
+                    const makeupDate = new Date(m);
+                    return makeupDate > startDate && makeupDate <= futureDate;
+                });
+            }
 
             let calendarInfo = '';
             if (selectedCalendars.length > 0) {
@@ -344,15 +376,11 @@
             const weekendDayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             const weekendStr = weekendDays.length ? weekendDays.map(d => weekendDayNames[d]).join(', ') : 'None';
 
-            // Count actual non-weekend holidays (some calendars like Sweden include weekends in holidays list)
-            const actualHolidayCount = holidays.length;
-            const holidayNote = actualHolidayCount > 100 ? ' (includes weekends)' : '';
-
             let detailsHTML = `
                 ${calendarInfo}
                 <div><strong>Weekend days:</strong> ${weekendStr}</div>
-                <div><strong>Holidays:</strong> ${actualHolidayCount} configured${holidayNote}</div>
-                <div><strong>Makeup days:</strong> ${makeupDays.length} configured</div>
+                <div><strong>Holidays in range:</strong> ${holidaysInRange.length}</div>
+                <div><strong>Makeup days in range:</strong> ${makeupDaysInRange.length}</div>
             `;
 
             elements.resultDetails.innerHTML = detailsHTML;
