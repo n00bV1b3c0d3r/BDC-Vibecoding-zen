@@ -37,6 +37,9 @@ CUSTOM_RULES_FILE = os.path.join(os.path.dirname(__file__), 'custom_rules.json')
 # Global cache for custom rules
 custom_rules = {}
 
+# Global cache for available calendars (performance optimization)
+AVAILABLE_CALENDARS_CACHE = []
+
 
 # ============================================================================
 # Helper Functions - Data Loading
@@ -102,93 +105,152 @@ def initialize_custom_rules_file():
     app.logger.info(f"Created sample custom_rules.json at {CUSTOM_RULES_FILE}")
 
 
+def get_country_display_name(country_code):
+    """
+    Get human-readable country name from country code.
+
+    Flat is better than nested: Extract pycountry lookup logic into dedicated function.
+
+    Args:
+        country_code: ISO country code (2 or 3 letters)
+
+    Returns:
+        str: Human-readable country name, or None if not found
+    """
+    # Try pycountry lookup based on code length
+    if len(country_code) == 2:
+        country_obj = pycountry.countries.get(alpha_2=country_code)
+        if country_obj:
+            return country_obj.name
+    elif len(country_code) == 3:
+        country_obj = pycountry.countries.get(alpha_3=country_code)
+        if country_obj:
+            return country_obj.name
+
+    # Fallback to holidays library
+    try:
+        holiday_obj = holidays.country_holidays(country_code)
+        return holiday_obj.country
+    except Exception:
+        return None
+
+
+def get_subdivision_calendars(country_code, country_name, national_holiday_set):
+    """
+    Get list of subdivision calendars that differ from national calendar.
+
+    Readability counts: Extract subdivision logic to reduce nesting.
+
+    Args:
+        country_code: ISO country code
+        country_name: Human-readable country name
+        national_holiday_set: Set of national holiday dates for comparison
+
+    Returns:
+        list: List of {"id": "...", "name": "..."} subdivision calendar objects
+    """
+    subdivision_calendars = []
+
+    # Check if country has subdivisions
+    holiday_class = holidays.country_holidays(country_code).__class__
+    if not hasattr(holiday_class, 'subdivisions') or not holiday_class.subdivisions:
+        return subdivision_calendars
+
+    # Process each subdivision
+    for subdiv in holiday_class.subdivisions:
+        # Skip invalid subdivisions
+        if not subdiv or len(subdiv) > 20:
+            continue
+
+        try:
+            # Get subdivision holidays
+            subdiv_holidays = holidays.country_holidays(country_code, subdiv=subdiv, years=[2024, 2025])
+            subdiv_holiday_set = set(subdiv_holidays.keys())
+
+            # Skip if same as national calendar
+            if subdiv_holiday_set == national_holiday_set:
+                continue
+
+            # Get human-readable subdivision name
+            subdiv_display = subdiv
+            try:
+                subdiv_obj = pycountry.subdivisions.get(code=f"{country_code}-{subdiv}")
+                if subdiv_obj:
+                    subdiv_display = subdiv_obj.name
+            except (KeyError, AttributeError):
+                pass
+
+            # Add subdivision calendar
+            subdivision_calendars.append({
+                "id": f"{country_code}-{subdiv}",
+                "name": f"{country_name} ({subdiv_display})"
+            })
+        except Exception:
+            # Skip problematic subdivisions
+            continue
+
+    return subdivision_calendars
+
+
 def get_available_calendars_from_library():
     """
     Get all available calendars from the holidays library.
 
+    Simple is better than complex: Use cache to avoid re-scanning on every API call.
+
     Returns:
         list: List of {"id": "...", "name": "..."} objects
     """
+    global AVAILABLE_CALENDARS_CACHE
+
+    # Return cached result if available
+    if AVAILABLE_CALENDARS_CACHE:
+        return AVAILABLE_CALENDARS_CACHE
+
     calendars = []
     seen_countries = {}  # Track country names to avoid duplicates
-
-    # Get all supported countries from holidays library
     supported_countries = holidays.list_supported_countries()
 
+    # Process each country
     for country_code in supported_countries:
         try:
-            # Get country name from pycountry for proper names
-            country_name = None
-
-            # Try to get proper country name from pycountry
-            if len(country_code) == 2:
-                country_obj = pycountry.countries.get(alpha_2=country_code)
-                if country_obj:
-                    country_name = country_obj.name
-            elif len(country_code) == 3:
-                country_obj = pycountry.countries.get(alpha_3=country_code)
-                if country_obj:
-                    country_name = country_obj.name
-
-            # Fallback to holidays library country code
+            # Get human-readable country name
+            country_name = get_country_display_name(country_code)
             if not country_name:
-                holiday_obj = holidays.country_holidays(country_code)
-                country_name = holiday_obj.country
+                continue
 
-            # Skip if we've already added this country (prefer 2-letter codes)
+            # Skip duplicate countries (prefer 2-letter codes)
             if country_name in seen_countries:
                 continue
 
-            # Add main country
+            # Add main country calendar
             calendars.append({
                 "id": country_code,
                 "name": country_name
             })
             seen_countries[country_name] = country_code
 
-            # Check for geographical subdivisions (states, provinces, etc.)
-            holiday_class = holidays.country_holidays(country_code).__class__
-            if hasattr(holiday_class, 'subdivisions') and holiday_class.subdivisions:
-                # Get national holidays for comparison
-                try:
-                    national_holidays = holidays.country_holidays(country_code, years=[2024, 2025])
-                    national_holiday_set = set(national_holidays.keys())
-                except Exception:
-                    national_holiday_set = set()
+            # Get national holidays for subdivision comparison
+            try:
+                national_holidays = holidays.country_holidays(country_code, years=[2024, 2025])
+                national_holiday_set = set(national_holidays.keys())
+            except Exception:
+                national_holiday_set = set()
 
-                for subdiv in holiday_class.subdivisions:
-                    try:
-                        # Skip if subdiv is empty or too long (likely not a state code)
-                        if not subdiv or len(subdiv) > 20:
-                            continue
+            # Add subdivision calendars
+            subdivision_calendars = get_subdivision_calendars(
+                country_code,
+                country_name,
+                national_holiday_set
+            )
+            calendars.extend(subdivision_calendars)
 
-                        # Check if subdivision holidays differ from national
-                        subdiv_holidays = holidays.country_holidays(country_code, subdiv=subdiv, years=[2024, 2025])
-                        subdiv_holiday_set = set(subdiv_holidays.keys())
-
-                        # Only include if different from national calendar
-                        if subdiv_holiday_set == national_holiday_set:
-                            continue
-
-                        # Try to get proper subdivision name from pycountry
-                        subdiv_display = subdiv
-                        try:
-                            subdiv_obj = pycountry.subdivisions.get(code=f"{country_code}-{subdiv}")
-                            if subdiv_obj:
-                                subdiv_display = subdiv_obj.name
-                        except (KeyError, AttributeError):
-                            pass
-
-                        subdiv_name = f"{country_name} ({subdiv_display})"
-                        calendars.append({
-                            "id": f"{country_code}-{subdiv}",
-                            "name": subdiv_name
-                        })
-                    except Exception:
-                        pass
         except Exception as e:
             app.logger.debug(f"Could not load calendar for {country_code}: {e}")
             continue
+
+    # Cache the result for future calls
+    AVAILABLE_CALENDARS_CACHE = calendars
 
     return calendars
 
