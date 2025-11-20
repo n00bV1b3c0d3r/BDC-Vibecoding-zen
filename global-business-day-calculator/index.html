@@ -344,10 +344,14 @@
             const weekendDayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             const weekendStr = weekendDays.length ? weekendDays.map(d => weekendDayNames[d]).join(', ') : 'None';
 
+            // Count actual non-weekend holidays (some calendars like Sweden include weekends in holidays list)
+            const actualHolidayCount = holidays.length;
+            const holidayNote = actualHolidayCount > 100 ? ' (includes weekends)' : '';
+
             let detailsHTML = `
                 ${calendarInfo}
                 <div><strong>Weekend days:</strong> ${weekendStr}</div>
-                <div><strong>Holidays:</strong> ${holidays.length} configured</div>
+                <div><strong>Holidays:</strong> ${actualHolidayCount} configured${holidayNote}</div>
                 <div><strong>Makeup days:</strong> ${makeupDays.length} configured</div>
             `;
 
