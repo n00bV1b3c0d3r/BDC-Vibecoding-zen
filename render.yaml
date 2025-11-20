@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: business-day-calculator
+    env: docker
+    rootDir: global-business-day-calculator
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: FLASK_ENV
+        value: production
